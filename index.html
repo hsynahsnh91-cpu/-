@@ -82,14 +82,12 @@
             }
         }
 
-        /* ===== Header ===== */
+        /* ===== Header (Non-sticky: scrolls smoothly with the page) ===== */
         .app-header {
             background: var(--card-bg);
             color: var(--text);
             padding: 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            position: relative; /* Scrolls naturally with the page */
             border-bottom: 1px solid var(--border);
             box-shadow: var(--shadow);
             display: flex;
@@ -104,10 +102,10 @@
         }
 
         .header-subtitle {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-secondary);
             margin-top: 4px;
-            font-family: monospace, sans-serif;
+            font-weight: 600;
         }
 
         .header-actions {
@@ -330,7 +328,7 @@
         .daily-summary.positive { color: var(--secondary); }
         .daily-summary.negative { color: var(--danger); }
 
-        /* ===== Transaction Items & Long Press Animation ===== */
+        /* ===== Transaction Items & Long Press ===== */
         .transaction-item {
             display: flex;
             align-items: center;
@@ -347,7 +345,6 @@
             border-top: 1px solid rgba(0,0,0,0.03);
         }
 
-        /* Visual effect during the 1-second long-press holding */
         .transaction-item.holding {
             background-color: rgba(220, 38, 38, 0.08) !important;
             transform: scale(0.97);
@@ -366,7 +363,6 @@
         }
 
         .transaction-icon-box svg { width: 18px; height: 18px; fill: currentColor; }
-
         .transaction-info { flex: 1; min-width: 0; }
 
         .transaction-name {
@@ -390,18 +386,30 @@
         .transaction-amount.income { color: var(--secondary); }
         .transaction-amount.expense { color: var(--danger); }
 
-        /* Small Instruction Badge for Long Press */
+        /* Temporary 2-Second Hint Badge */
         .hint-badge {
             background: rgba(37, 99, 235, 0.08);
             color: var(--primary);
-            padding: 8px 12px;
+            padding: 10px 14px;
             border-radius: var(--radius-sm);
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 12px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
+            opacity: 1;
+            max-height: 80px;
+            overflow: hidden;
+            transition: opacity 0.5s ease, max-height 0.5s ease, padding 0.5s ease, margin 0.5s ease;
+        }
+
+        .hint-badge.hidden-hint {
+            opacity: 0;
+            max-height: 0;
+            padding: 0 14px;
+            margin-bottom: 0;
+            pointer-events: none;
         }
 
         .hint-badge svg { width: 16px; height: 16px; fill: currentColor; flex-shrink: 0; }
@@ -780,42 +788,6 @@
         .empty-state svg { width: 48px; height: 48px; fill: currentColor; margin-bottom: 12px; }
         .empty-state .empty-text { font-size: 13px; font-weight: 700; }
 
-        .app-notification-banner {
-            position: fixed;
-            top: 16px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-120%);
-            width: calc(100% - 32px);
-            max-width: 440px;
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            box-shadow: var(--shadow-lg);
-            padding: 16px;
-            z-index: 4000;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .app-notification-banner.active { transform: translateX(-50%) translateY(0); }
-        .app-notification-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: rgba(217, 119, 6, 0.1);
-            color: var(--warning);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .app-notification-icon svg { width: 20px; height: 20px; fill: currentColor; }
-        .app-notification-body { flex: 1; }
-        .app-notification-title { font-size: 13px; font-weight: 800; margin-bottom: 4px; }
-        .app-notification-desc { font-size: 11px; color: var(--text-secondary); line-height: 1.4; }
-        .app-notification-close { background: none; border: none; cursor: pointer; color: var(--text-secondary); }
-
         .toast {
             position: fixed;
             bottom: 80px;
@@ -837,18 +809,6 @@
 </head>
 <body>
 
-    <!-- Notification Banner -->
-    <div class="app-notification-banner" id="appNotificationBanner">
-        <div class="app-notification-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16l-2-2v-5z"/></svg>
-        </div>
-        <div class="app-notification-body">
-            <div class="app-notification-title" id="notifTitle">تذكير استحقاق فاتورة</div>
-            <div class="app-notification-desc" id="notifDesc">يرجى مراجعة العمليات المالية لتسديد الفواتير المستحقة اليوم.</div>
-        </div>
-        <button class="app-notification-close" onclick="closeNotificationBanner()">✕</button>
-    </div>
-
     <!-- Toast Notification -->
     <div class="toast" id="toast">
         <span id="toastText"></span>
@@ -867,14 +827,14 @@
     </div>
 
     <div class="app-container">
-        <!-- Header -->
+        <!-- Header (Smooth Flow Non-Sticky Header) -->
         <div class="app-header">
             <div>
                 <div class="header-title" id="mainHeaderTitle">محفظتي الشخصية</div>
                 <div class="header-subtitle" id="headerDate"></div>
             </div>
             <div class="header-actions">
-                <button class="header-btn" onclick="showAddModal()">
+                <button class="header-btn" onclick="handlePlusAction()">
                     <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 </button>
             </div>
@@ -925,7 +885,8 @@
 
         <!-- ===== Transactions Screen ===== -->
         <div class="screen" id="screenTransactions">
-            <div class="hint-badge">
+            <!-- 2-Second Temporary Hint Badge -->
+            <div class="hint-badge" id="deleteHintBadge">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
                 <span>لحذف أي عملية: اضغط عليها ضغطة مطولة لمدة ثانية واحدة</span>
             </div>
@@ -1030,9 +991,9 @@
             </div>
 
             <div class="settings-group">
-                <div class="settings-group-title">العملة</div>
+                <div class="settings-group-title">العملة الافتراضية</div>
                 <div class="settings-item" onclick="cycleCurrency()">
-                    <span class="item-label">العملة الافتراضية</span>
+                    <span class="item-label">العملة الافتراضية للنظام</span>
                     <span class="item-value" id="currencyLabel">سوري جديد</span>
                 </div>
             </div>
@@ -1055,8 +1016,8 @@
             </div>
         </div>
 
-        <!-- FAB Button -->
-        <button class="fab" id="fab" onclick="showAddModal()">
+        <!-- Dynamic Context-Aware FAB Button -->
+        <button class="fab" id="fab" onclick="handlePlusAction()">
             <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
         </button>
 
@@ -1085,7 +1046,7 @@
         </div>
     </div>
 
-    <!-- ===== Modal for Transactions ===== -->
+    <!-- ===== Add / Edit Transaction Modal ===== -->
     <div class="modal-overlay" id="transactionModal">
         <div class="modal">
             <div class="modal-header">
@@ -1104,6 +1065,19 @@
                 <div class="form-group">
                     <label class="form-label">المبلغ</label>
                     <input type="number" class="form-input" id="inputAmount" placeholder="0.00" step="0.01" min="0" required style="font-family: monospace;">
+                </div>
+
+                <!-- Currency selection field for the transaction -->
+                <div class="form-group">
+                    <label class="form-label">العملة</label>
+                    <select class="form-input" id="inputCurrency">
+                        <option value="سوري جديد">سوري جديد</option>
+                        <option value="تركي">تركي</option>
+                        <option value="سعودي">سعودي</option>
+                        <option value="إماراتي">إماراتي</option>
+                        <option value="دولار">دولار</option>
+                        <option value="يورو">يورو</option>
+                    </select>
                 </div>
 
                 <div class="form-group" id="sourceGroup">
@@ -1168,7 +1142,7 @@
         </div>
     </div>
 
-    <!-- ===== Modal for Reminders ===== -->
+    <!-- ===== Add / Edit Reminder Modal ===== -->
     <div class="modal-overlay" id="reminderModal">
         <div class="modal">
             <div class="modal-header">
@@ -1227,7 +1201,8 @@
             chartMonth: new Date().getMonth(),
             chartYear: new Date().getFullYear(),
             reminderRepeat: true,
-            confirmCallback: null
+            confirmCallback: null,
+            hasShownDeleteHint: false // ensures hint shows only once per session
         };
 
         const categoryIconsSVG = {
@@ -1253,7 +1228,7 @@
         // ===== Storage Management =====
         function loadData() {
             try {
-                const data = localStorage.getItem('expenses_system_v5');
+                const data = localStorage.getItem('expenses_system_v6');
                 if (data) {
                     const parsed = JSON.parse(data);
                     APP.transactions = parsed.transactions || [];
@@ -1267,7 +1242,7 @@
 
         function saveData() {
             try {
-                localStorage.setItem('expenses_system_v5', JSON.stringify({
+                localStorage.setItem('expenses_system_v6', JSON.stringify({
                     transactions: APP.transactions,
                     reminders: APP.reminders,
                     settings: APP.settings
@@ -1323,10 +1298,20 @@
             saveData();
         }
 
+        // Header Date: Arabic Language strictly
         function updateHeaderDate() {
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('headerDate').textContent = now.toLocaleDateString('en-US', options);
+            document.getElementById('headerDate').textContent = now.toLocaleDateString('ar-SY', options);
+        }
+
+        // Dynamic Context-Aware Action for '+' Button
+        function handlePlusAction() {
+            if (APP.currentScreen === 'reminders') {
+                showAddReminderModal();
+            } else {
+                showAddModal();
+            }
         }
 
         function switchScreen(screen) {
@@ -1347,19 +1332,28 @@
                 fab.classList.remove('visible');
             }
 
-            if (screen === 'reminders') {
-                fab.onclick = showAddReminderModal;
-            } else {
-                fab.onclick = showAddModal;
+            // Trigger the 2-second temporary hint in transactions screen (only once per session)
+            if (screen === 'transactions') {
+                const hint = document.getElementById('deleteHintBadge');
+                if (!APP.hasShownDeleteHint && hint) {
+                    hint.classList.remove('hidden-hint');
+                    setTimeout(() => {
+                        hint.classList.add('hidden-hint');
+                    }, 2000); // exactly 2 seconds
+                    APP.hasShownDeleteHint = true;
+                } else if (hint) {
+                    hint.classList.add('hidden-hint');
+                }
             }
 
             if (screen === 'charts') updateCharts();
         }
 
         // Global formatting with English numerals
-        function formatAmount(amount) {
+        function formatAmount(amount, currencyOverride) {
             const num = parseFloat(amount) || 0;
-            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + APP.settings.currency;
+            const cur = currencyOverride || APP.settings.currency;
+            return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + cur;
         }
 
         function formatDate(dateStr) {
@@ -1375,7 +1369,7 @@
             const toast = document.getElementById('toast');
             document.getElementById('toastText').textContent = message;
             toast.className = 'toast show';
-            setTimeout(() => toast.classList.remove('show'), 3000);
+            setTimeout(() => toast.className = 'toast', 3000);
         }
 
         function showConfirm(title, message, callback) {
@@ -1503,13 +1497,13 @@
             pressTimer = setTimeout(() => {
                 isLongPressTriggered = true;
                 element.classList.remove('holding');
-                if (navigator.vibrate) navigator.vibrate(50); // Haptic feedback on hold finish
+                if (navigator.vibrate) navigator.vibrate(50);
                 showConfirm(
                     'حذف العملية المالية',
                     'هل تريد بالتأكيد حذف هذه العملية المسجلة؟',
                     () => deleteTransaction(id)
                 );
-            }, 1000); // exactly 1 second
+            }, 1000);
         }
 
         function cancelPress(element) {
@@ -1546,7 +1540,6 @@
             const sign = isIncome ? '+' : '-';
             const name = isIncome ? (tx.source || 'دخل') : (categoryNames[APP.settings.language][tx.category] || tx.category);
 
-            // If inside Transactions Section: attach the 1-second long-press event listeners
             const longPressEvents = enableLongPressDelete ? `
                 onmousedown="startPress(this, '${tx.id}')"
                 onmouseup="cancelPress(this)"
@@ -1563,7 +1556,7 @@
                         <div class="transaction-name">${name}</div>
                         ${tx.note ? `<div class="transaction-note">${tx.note}</div>` : ''}
                     </div>
-                    <div class="transaction-amount ${amountClass}">${sign}${formatAmount(tx.amount)}</div>
+                    <div class="transaction-amount ${amountClass}">${sign}${formatAmount(tx.amount, tx.currency)}</div>
                 </div>`;
         }
 
@@ -1580,7 +1573,7 @@
             if (search) {
                 filtered = filtered.filter(t => {
                     const name = t.type === 'income' ? t.source : (categoryNames[APP.settings.language][t.category] || t.category);
-                    return name.toLowerCase().includes(search) || (t.note || '').toLowerCase().includes(search);
+                    return (name || '').toLowerCase().includes(search) || (t.note || '').toLowerCase().includes(search);
                 });
             }
 
@@ -1596,7 +1589,6 @@
                     </div>`;
             } else {
                 const grouped = groupTransactionsByDate(filtered);
-                // Enabled ONLY in the Transactions screen:
                 container.innerHTML = grouped.map(g => createGroupHTML(g, true)).join('');
             }
         }
@@ -1629,12 +1621,13 @@
             renderTransactions();
         }
 
-        // ===== Modal Management =====
+        // ===== Modal Management (Preserving All Filled Form Data) =====
         function showAddModal() {
             document.getElementById('modalTitle').textContent = 'إضافة عملية مالية';
             document.getElementById('editId').value = '';
             document.getElementById('transactionForm').reset();
             document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('inputCurrency').value = APP.settings.currency;
             setModalType('income');
             document.getElementById('transactionModal').classList.add('active');
         }
@@ -1648,6 +1641,7 @@
             document.getElementById('inputAmount').value = tx.amount;
             document.getElementById('inputDate').value = tx.date;
             document.getElementById('inputNote').value = tx.note || '';
+            document.getElementById('inputCurrency').value = tx.currency || APP.settings.currency;
 
             setModalType(tx.type);
             if (tx.type === 'income') {
@@ -1674,9 +1668,9 @@
         }
 
         function selectCategoryByName(cat) {
-            APP.selectedCategory = cat;
+            APP.selectedCategory = cat || 'food';
             document.querySelectorAll('#categoryGrid .category-item').forEach(c => {
-                c.classList.toggle('selected', c.getAttribute('data-cat') === cat);
+                c.classList.toggle('selected', c.getAttribute('data-cat') === APP.selectedCategory);
             });
         }
 
@@ -1686,19 +1680,20 @@
             const amount = parseFloat(document.getElementById('inputAmount').value);
             const date = document.getElementById('inputDate').value;
             const note = document.getElementById('inputNote').value;
+            const currency = document.getElementById('inputCurrency').value || APP.settings.currency;
 
             if (id) {
                 const idx = APP.transactions.findIndex(t => t.id === id);
                 if (idx >= 0) {
                     APP.transactions[idx] = {
-                        id, amount, date, note, type: APP.modalType,
+                        id, amount, date, note, currency, type: APP.modalType,
                         source: APP.modalType === 'income' ? document.getElementById('inputSource').value : undefined,
                         category: APP.modalType === 'expense' ? APP.selectedCategory : undefined
                     };
                 }
             } else {
                 APP.transactions.push({
-                    id: generateId(), type: APP.modalType, amount, date, note,
+                    id: generateId(), type: APP.modalType, amount, date, note, currency,
                     source: APP.modalType === 'income' ? document.getElementById('inputSource').value : undefined,
                     category: APP.modalType === 'expense' ? APP.selectedCategory : undefined
                 });
@@ -1708,6 +1703,7 @@
             closeModal('transactionModal');
             renderDashboard();
             renderTransactions();
+            updateCharts();
             showToast('تم حفظ العملية بنجاح');
         }
 
@@ -1858,7 +1854,6 @@
             saveData();
             closeModal('reminderModal');
             renderReminders();
-            checkReminders();
             showToast('تم حفظ التذكير بنجاح');
         }
 
@@ -1932,46 +1927,11 @@
             }
         }
 
-        function checkReminders() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            const now = new Date();
-            now.setHours(0,0,0,0);
-
-            APP.reminders.forEach(r => {
-                const due = new Date(r.dueDate);
-                if (due <= now && r.lastNotified !== todayStr) {
-                    triggerAlert(r);
-                    r.lastNotified = todayStr;
-                    if (r.repeatMonthly) {
-                        const nextDue = new Date(r.dueDate);
-                        nextDue.setMonth(nextDue.getMonth() + 1);
-                        r.dueDate = nextDue.toISOString().split('T')[0];
-                        r.lastNotified = null;
-                    }
-                }
-            });
-            saveData();
-        }
-
-        function triggerAlert(reminder) {
-            const desc = `فاتورة "${reminder.name}" بقيمة ${formatAmount(reminder.amount)} مستحقة الدفع اليوم (${formatDate(reminder.dueDate)})`;
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification('تذكير سداد الفاتورة', { body: desc });
-            }
-            document.getElementById('notifTitle').textContent = 'تذكير بموعد استحقاق فاتورة';
-            document.getElementById('notifDesc').textContent = desc;
-            document.getElementById('appNotificationBanner').classList.add('active');
-        }
-
-        function closeNotificationBanner() {
-            document.getElementById('appNotificationBanner').classList.remove('active');
-        }
-
-        // ===== Export / Backup =====
+        // ===== Export & Backup =====
         function exportCSV() {
-            let csv = 'Type,Amount,Category,Date,Note\n';
+            let csv = 'Type,Amount,Currency,Category,Date,Note\n';
             APP.transactions.forEach(t => {
-                csv += `"${t.type}","${t.amount}","${t.category || t.source}","${t.date}","${t.note || ''}"\n`;
+                csv += `"${t.type}","${t.amount}","${t.currency || APP.settings.currency}","${t.category || t.source}","${t.date}","${t.note || ''}"\n`;
             });
             downloadFile(csv, 'transactions.csv', 'text/csv');
         }
@@ -1979,7 +1939,7 @@
         function exportPDF() {
             let html = `<html><body style="direction:rtl; font-family:sans-serif; padding: 24px;"><h2>تقرير الحركات المالية والمصروفات</h2><hr/>`;
             APP.transactions.forEach(t => {
-                html += `<p><b>${t.type === 'income' ? 'دخل' : 'مصروف'}:</b> ${formatAmount(t.amount)} | ${t.date} | ${t.note || ''}</p>`;
+                html += `<p><b>${t.type === 'income' ? 'دخل' : 'مصروف'}:</b> ${formatAmount(t.amount, t.currency)} | ${t.date} | ${t.note || ''}</p>`;
             });
             html += '</body></html>';
             downloadFile(html, 'report.html', 'text/html');
@@ -2037,8 +1997,6 @@
             renderDashboard();
             renderTransactions();
             renderReminders();
-            checkReminders();
-            setInterval(checkReminders, 60000);
         }
 
         document.addEventListener('DOMContentLoaded', init);
